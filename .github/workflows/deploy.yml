@@ -1,0 +1,14 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main   
+
+jobs:
+  checkout:
+    name: Checkout & Setup
+    runs-on: self-hosted   
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
