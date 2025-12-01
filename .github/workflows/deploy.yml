@@ -44,7 +44,7 @@ jobs:
       - name: Install Trivy
         run: |
           sudo apt-get update -y
-          sudo apt-get install -y wget apt-transport-https gnupg lsb-release
+          sudo apt-get install -y wget apt-transport-https gnupg lsb-releases
           wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
           echo deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main | sudo tee /etc/apt/sources.list.d/trivy.list
           sudo apt-get update -y
@@ -54,3 +54,19 @@ jobs:
         run: |
           trivy image --exit-code 0 --severity HIGH,CRITICAL ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:latest
           trivy image --exit-code 1 --severity CRITICAL ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:latest || echo "⚠️ Critical vulnerabilities found"
+
+
+  deploy:
+    name: Deploy on EC2
+    runs-on: self-hosted
+    needs: scan
+    steps:
+      - name: Deploy latest container
+        run: |
+          docker stop flask-app || true
+          docker rm flask-app || true
+          sleep 6
+          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:latest
+          docker run -d --name flask-app -p 5000:5000 ${{ secrets.DOCKERHUB_USERNAME }}/flask-app:latest
+          sleep 6
+          docker system prune -f
